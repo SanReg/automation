@@ -1,6 +1,4 @@
-token*.txt
 token_backup*.txt
-token*.json
 *.log
 __pycache__/
 *.pyc
