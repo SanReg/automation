@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checks History Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            margin-top: 50px;
+        }
+
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .record-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .record-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .record-id {
+            font-size: 0.85em;
+            color: #666;
+            font-family: monospace;
+        }
+
+        .record-date {
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .score-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.75em;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .score-value.high {
+            color: #e74c3c;
+        }
+
+        .score-value.medium {
+            color: #f39c12;
+        }
+
+        .score-value.low {
+            color: #27ae60;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-done {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .report-links {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .report-link {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.85em;
+            transition: background 0.3s ease;
+        }
+
+        .report-link:hover {
+            background: #5568d3;
+        }
+
+        .report-link.disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .stats-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .token-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .token-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .token-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .token-expiry {
+            font-size: 0.9em;
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+
+        .token-valid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .token-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .token-expiring-soon {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .update-token-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .update-token-btn:hover {
+            background: #5568d3;
+        }
+
+        .token-input-area {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .token-input-area.active {
+            display: block;
+        }
+
+        .token-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+
+        .token-instructions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .token-instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .token-instructions li {
+            margin: 5px 0;
+        }
+
+        .token-instructions code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .records-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Checks History Dashboard</h1>
+        
+        <div class="token-panel">
+            <div class="token-status">
+                <div class="token-info">
+                    <span style="font-weight: bold;">🔑 Token Status:</span>
+                    <span id="tokenExpiry" class="token-expiry">Checking...</span>
+                </div>
+                <button id="updateTokenBtn" class="update-token-btn">Update Token</button>
+            </div>
+            <div id="tokenInputArea" class="token-input-area">
+                <div class="token-instructions">
+                    <strong>📋 How to get a fresh JWT token:</strong>
+                    <ol>
+                        <li>Open <strong>ryne.ai</strong> in a new tab and log in</li>
+                        <li>Press <strong>F12</strong> to open Developer Tools</li>
+                        <li>Go to the <strong>Network</strong> tab</li>
+                        <li>Refresh the page or navigate around</li>
+                        <li>Look for a request to: <code>rest/v1/users</code></li>
+                        <li>Click on it, go to <strong>Headers</strong> section</li>
+                        <li>Find <strong>Authorization</strong> in Request Headers</li>
+                        <li>Copy the entire value (starts with "Bearer eyJ...")</li>
+                        <li>Paste it below and click Save</li>
+                    </ol>
+                </div>
+                <input type="text" id="tokenInput" class="token-input" placeholder="Paste Bearer token here...">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="saveToken()" class="update-token-btn">Save Token</button>
+                    <button onclick="cancelTokenUpdate()" class="update-token-btn" style="background: #6c757d;">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            Loading data...
+        </div>
+
+        <div id="error" style="display: none;" class="error"></div>
+
+        <div id="records" class="records-grid"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://uvibhxfykplnajxopihb.supabase.co/rest/v1/checks_history?select=*&order=created_at.desc&limit=50';
+        const API_KEY = 'sb_publishable_gn-VTqpQoi1gbd7OicsF4g_LcHf0SXr'
+        const TOKEN_REFRESH_URL = 'https://uvibhxfykplnajxopihb.supabase.co/rest/v1/users?select=*&uid=eq.bfbaac84-216b-4955-aa9e-ea25f4563e15'; // Update this with the actual collect endpoint
+        
+        // Store the current auth token (load from localStorage if available)
+        let currentAuthToken = localStorage.getItem('ryneai_token') || 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6ImZiYjMyYjMxLTUxNjQtNDdjZC05N2IzLTUxMmUwOTMzOTc5YSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3V2aWJoeGZ5a3BsbmFqeG9waWhiLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJiZmJhYWM4NC0yMTZiLTQ5NTUtYWE5ZS1lYTI1ZjQ1NjNlMTUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY3OTc5NDEzLCJpYXQiOjE3Njc5NzU4MTMsImVtYWlsIjoibGFpa29qdW5pb3IxNEBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImNvdW50cnkiOiIiLCJlbWFpbCI6ImxhaWtvanVuaW9yMTRAZ21haWwuY29tIiwiZW1haWxfdXBkYXRlcyI6dHJ1ZSwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6Im91c3NhbWEgaGFkamFsIiwiaGVhcmRBYm91dFVzIjoiSW5zdGFncmFtIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiJiZmJhYWM4NC0yMTZiLTQ5NTUtYWE5ZS1lYTI1ZjQ1NjNlMTUiLCJ2aXNpdG9ySWQiOiIyYzY0ODRjMDJhMTNhMWJjYjUwZjQzMjc0ODAwYWFkMyJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzY3OTc1ODEzfV0sInNlc3Npb25faWQiOiI3MzFhMThlZC0xZGMwLTQxN2ItOTJiMS1jZDdjNTk1NDhlMWMiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.s5FnD6a_7thwTbP5DpyiE_SS2f-K0eg651YYL5wbDAQnz93QwLVUfU8LxHiBiWE7YNyL-R_ajjk239PmOb7NNg';
+
+        // Decode JWT and check expiry
+        function parseJWT(token) {
+            try {
+                const base64Url = token.replace('Bearer ', '').split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+                    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                ).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function checkTokenExpiry() {
+            const payload = parseJWT(currentAuthToken);
+            const expiryElement = document.getElementById('tokenExpiry');
+            
+            if (!payload || !payload.exp) {
+                expiryElement.textContent = 'Invalid Token';
+                expiryElement.className = 'token-expiry token-expired';
+                return;
+            }
+
+            const expiryDate = new Date(payload.exp * 1000);
+            const now = new Date();
+            const timeLeft = expiryDate - now;
+            const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (timeLeft <= 0) {
+                expiryElement.textContent = '❌ Token Expired';
+                expiryElement.className = 'token-expiry token-expired';
+            } else if (timeLeft < 10 * 60 * 1000) { // Less than 10 minutes
+                expiryElement.textContent = `⚠️ Expires in ${minutesLeft}m`;
+                expiryElement.className = 'token-expiry token-expiring-soon';
+            } else if (timeLeft < 60 * 60 * 1000) { // Less than 1 hour
+                expiryElement.textContent = `✅ Valid (${minutesLeft}m left)`;
+                expiryElement.className = 'token-expiry token-valid';
+            } else {
+                expiryElement.textContent = `✅ Valid (${hoursLeft}h ${minutesLeft}m left)`;
+                expiryElement.className = 'token-expiry token-valid';
+            }
+        }
+
+        // Token management functions
+        function showTokenInput() {
+            document.getElementById('tokenInputArea').classList.add('active');
+        }
+
+        function cancelTokenUpdate() {
+            document.getElementById('tokenInputArea').classList.remove('active');
+            document.getElementById('tokenInput').value = '';
+        }
+
+        function saveToken() {
+            const newToken = document.getElementById('tokenInput').value.trim();
+            
+            if (!newToken) {
+                alert('Please enter a token');
+                return;
+            }
+
+            // Validate token format
+            if (!newToken.startsWith('Bearer ')) {
+                alert('Token should start with "Bearer "');
+                return;
+            }
+
+            // Try to parse and validate
+            const payload = parseJWT(newToken);
+            if (!payload) {
+                alert('Invalid token format');
+                return;
+            }
+
+            // Save token
+            currentAuthToken = newToken;
+            localStorage.setItem('ryneai_token', newToken);
+            
+            // Update UI
+            checkTokenExpiry();
+            cancelTokenUpdate();
+            
+            // Refresh data with new token
+            fetchData();
+            
+            alert('✅ Token updated successfully!');
+        }
+
+        document.getElementById('updateTokenBtn').addEventListener('click', showTokenInput);
+
+        // Check token expiry periodically
+        function checkAndNotifyExpiry() {
+            checkTokenExpiry();
+            
+            const payload = parseJWT(currentAuthToken);
+            if (payload && payload.exp) {
+                const expiryDate = new Date(payload.exp * 1000);
+                const now = new Date();
+                const timeLeft = expiryDate - now;
+                
+                // If token expires in less than 10 minutes, show alert
+                if (timeLeft > 0 && timeLeft < 10 * 60 * 1000) {
+                    console.warn('⚠️ Token expiring soon! Please update it.');
+                }
+                
+                // If token is expired, show error
+                if (timeLeft <= 0) {
+                    console.error('❌ Token has expired! Please update it.');
+                }
+            }
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': API_KEY,
+                        'Authorization': currentAuthToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayData(data);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function getScoreClass(score, type) {
+            if (score === null || score === undefined) return '';
+            
+            if (type === 'turnitin' || type === 'zerogpt' || type === 'gptzero') {
+                if (score >= 50) return 'high';
+                if (score >= 25) return 'medium';
+                return 'low';
+            } else if (type === 'reilaa') {
+                if (score >= 7) return 'high';
+                if (score >= 4) return 'medium';
+                return 'low';
+            }
+            return '';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function displayData(data) {
+            document.getElementById('loading').style.display = 'none';
+            
+            if (!data || data.length === 0) {
+                showError('No records found');
+                return;
+            }
+
+            const recordsContainer = document.getElementById('records');
+            recordsContainer.innerHTML = '';
+
+            data.forEach(record => {
+                const card = document.createElement('div');
+                card.className = 'record-card';
+                
+                const statusClass = record.turnitin_status === 'done' ? 'status-done' : 
+                                   record.turnitin_status === 'processing' ? 'status-processing' : 'status-error';
+
+                card.innerHTML = `
+                    <div class="record-header">
+                        <div class="record-id">${record.id.substring(0, 8)}...</div>
+                        <div class="record-date">${formatDate(record.created_at)}</div>
+                    </div>
+                    
+                    <div class="file-name">📄 ${record.file_name}</div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <span class="status-badge ${statusClass}">${record.turnitin_status || 'Unknown'}</span>
+                    </div>
+                    
+                    <div class="scores-grid">
+                        <div class="score-item">
+                            <div class="score-label">Turnitin AI</div>
+                            <div class="score-value ${getScoreClass(record.turnitin_score, 'turnitin')}">
+                                ${record.turnitin_score !== null ? record.turnitin_score + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Similarity</div>
+                            <div class="score-value ${getScoreClass(record.turnitin_similarity, 'turnitin')}">
+                                ${record.turnitin_similarity !== null ? record.turnitin_similarity + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Reilaa</div>
+                            <div class="score-value ${getScoreClass(record.reilaa_score, 'reilaa')}">
+                                ${record.reilaa_score !== null ? record.reilaa_score + '/10' : 'N/A'}
+                            </div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">ZeroGPT</div>
+                            <div class="score-value ${getScoreClass(record.zerogpt_score, 'zerogpt')}">
+                                ${record.zerogpt_score !== null ? record.zerogpt_score + '%' : 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-links">
+                        <a href="${record.turnitin_report_url || '#'}" 
+                           target="_blank" 
+                           class="report-link ${!record.turnitin_report_url ? 'disabled' : ''}">
+                            📊 AI Report
+                        </a>
+                        <a href="${record.turnitin_similarity_report_url || '#'}" 
+                           target="_blank" 
+                           class="report-link ${!record.turnitin_similarity_report_url ? 'disabled' : ''}">
+                            📋 Similarity Report
+                        </a>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
+                        <a href="${record.file_url}" target="_blank" style="color: #667eea; text-decoration: none; font-size: 0.85em;">
+                            🔗 Download File
+                        </a>
+                    </div>
+                `;
+                
+                recordsContainer.appendChild(card);
+            });
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = `Error: ${message}`;
+            errorDiv.style.display = 'block';
+        }
+
+        // Initialize on page load
+        checkTokenExpiry();
+        fetchData();
+
+        // Check token expiry every minute
+        setInterval(checkAndNotifyExpiry, 60000);
+
+        // Auto-refresh data every 30 seconds
+        setInterval(fetchData, 30000);
+    </script>
+</body>
+</html>
