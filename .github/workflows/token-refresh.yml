@@ -25,7 +25,8 @@ jobs:
         
     - name: Install dependencies
       run: |
-        pip install selenium-wire selenium webdriver-manager
+        pip install blinker==1.7.0
+        pip install selenium-wire selenium webdriver-manager setuptools
         
     - name: Install Chrome
       run: |
