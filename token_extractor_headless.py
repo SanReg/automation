@@ -40,15 +40,23 @@ class RyneTokenExtractorHeadless:
         )
         
     def extract_token_from_requests(self):
-        """Extract JWT token from network requests"""
+        """Extract JWT token and cookies from network requests"""
         for request in self.driver.requests:
-            if 'supabase.co/rest/v1/' in request.url:
+            if 'supabase.co/rest/v1/' in request.url or 'ryne.ai' in request.url:
+                # Extract JWT token
                 if request.headers.get('Authorization'):
                     auth_header = request.headers.get('Authorization')
                     if auth_header and auth_header.startswith('Bearer '):
                         self.token = auth_header
                         print(f"✅ Token found from: {request.url}")
-                        return True
+                
+                # Extract cookies
+                if request.headers.get('Cookie'):
+                    self.cookies = request.headers.get('Cookie')
+                    print(f"✅ Cookies found from: {request.url}")
+                
+                if self.token:
+                    return True
         return False
     
     def login_and_extract(self):
@@ -106,7 +114,7 @@ class RyneTokenExtractorHeadless:
                 self.driver.quit()
     
     def save_token(self, filename="token.txt"):
-        """Save token to file"""
+        """Save token and cookies to file"""
         if not self.token:
             return False
         
@@ -116,9 +124,16 @@ class RyneTokenExtractorHeadless:
                 f.write(self.token)
             print(f"💾 Token saved to {filename}")
             
+            # Save cookies if available
+            if self.cookies:
+                with open("Cookie.txt", 'w') as f:
+                    f.write(self.cookies)
+                print(f"💾 Cookies saved to Cookie.txt")
+            
             # Save JSON with metadata
             token_data = {
                 "token": self.token,
+                "cookies": self.cookies if self.cookies else None,
                 "extracted_at": datetime.now().isoformat(),
                 "format": "Bearer JWT"
             }

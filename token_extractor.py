@@ -37,18 +37,27 @@ class RyneTokenExtractor:
         )
         
     def extract_token_from_requests(self):
-        """Extract JWT token from network requests"""
-        print("🔍 Scanning network requests for JWT token...")
+        """Extract JWT token and cookies from network requests"""
+        print("🔍 Scanning network requests for JWT token and cookies...")
         
         for request in self.driver.requests:
-            # Look for requests to Supabase endpoints
-            if 'supabase.co/rest/v1/' in request.url:
+            # Look for requests to Supabase or ryne.ai
+            if 'supabase.co/rest/v1/' in request.url or 'ryne.ai' in request.url:
+                # Extract JWT token
                 if request.headers.get('Authorization'):
                     auth_header = request.headers.get('Authorization')
                     if auth_header and auth_header.startswith('Bearer '):
                         self.token = auth_header
                         print(f"✅ Token found from: {request.url}")
-                        return True
+                
+                # Extract cookies
+                if request.headers.get('Cookie'):
+                    self.cookies = request.headers.get('Cookie')
+                    print(f"✅ Cookies found from: {request.url}")
+                
+                # Return True if we have at least the token
+                if self.token:
+                    return True
         
         return False
     
@@ -154,7 +163,7 @@ class RyneTokenExtractor:
                 self.driver.quit()
     
     def save_token(self, filename="token.txt"):
-        """Save token to file"""
+        """Save token and cookies to file"""
         if not self.token:
             print("❌ No token to save")
             return False
@@ -163,6 +172,19 @@ class RyneTokenExtractor:
             with open(filename, 'w') as f:
                 f.write(self.token)
             print(f"💾 Token saved to {filename}")
+            
+            # Save cookies if available
+            if self.cookies:
+                with open("Cookie.txt", 'w') as f:
+                    f.write(self.cookies)
+                print(f"💾 Cookies saved to Cookie.txt")
+                
+                # Also save cookies backup with timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                cookie_backup = f"cookie_backup_{timestamp}.txt"
+                with open(cookie_backup, 'w') as f:
+                    f.write(self.cookies)
+                print(f"💾 Cookie backup saved to {cookie_backup}")
             
             # Also save with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -174,6 +196,7 @@ class RyneTokenExtractor:
             # Save as JSON with metadata
             token_data = {
                 "token": self.token,
+                "cookies": self.cookies if self.cookies else None,
                 "extracted_at": datetime.now().isoformat(),
                 "format": "Bearer JWT"
             }
